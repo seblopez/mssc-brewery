@@ -68,6 +68,7 @@ local.properties
 # Maven
 ######################
 /log/
+/target
 */target/**
 ######################
 # Gradle
@@ -123,6 +124,7 @@ Desktop.ini
 *.*~
 *~
 .merge_file*
+*.lst
 
 ######################
 # Gradle Wrapper
