@@ -3,16 +3,19 @@ package guru.springframework.msscbrewery.web.controller.v2;
 import guru.springframework.msscbrewery.services.v2.BeerServiceV2;
 import guru.springframework.msscbrewery.web.model.v2.BeerDtoV2;
 import guru.springframework.msscbrewery.web.model.v2.BeerStyleEnum;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.restdocs.AutoConfigureRestDocs;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.restdocs.RestDocumentationExtension;
+import org.springframework.restdocs.constraints.ConstraintDescriptions;
+import org.springframework.restdocs.payload.FieldDescriptor;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.util.StringUtils;
 
-import java.text.MessageFormat;
 import java.util.UUID;
 
 import static guru.springframework.msscbrewery.web.controller.AbstractRestControllerTest.asJsonString;
@@ -21,27 +24,27 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.verify;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
+import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
+import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
+import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.snippet.Attributes.key;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@ExtendWith(RestDocumentationExtension.class)
+@AutoConfigureRestDocs
+@WebMvcTest(BeerControllerV2.class)
 public class BeerControllerV2Test {
 
     private static final String API_V2_BEER = "/api/v2/beer";
 
+    @Autowired
     MockMvc mockMvc;
 
-    @Mock
+    @MockBean
     BeerServiceV2 beerService;
-
-    @InjectMocks
-    BeerControllerV2 beerController;
-
-    @Before
-    public void setUp() {
-        MockitoAnnotations.initMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(beerController).build();
-    }
 
     @Test
     public void getBeerOk() throws Exception {
@@ -54,11 +57,22 @@ public class BeerControllerV2Test {
                         .upc(1213L)
                         .build());
 
-        mockMvc.perform(get(MessageFormat.format("{0}/{1}",API_V2_BEER, id))
+        mockMvc.perform(get(API_V2_BEER + "/{beerId}", id)
                 .accept(MediaType.APPLICATION_JSON)
                 .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.beerName", equalTo("Quilmes")));
+                .andExpect(jsonPath("$.beerName", equalTo("Quilmes")))
+                .andDo(document("v2/beer-get",
+                        pathParameters(
+                                parameterWithName("beerId").description("UUID of desired beer to get.")),
+                        responseFields(
+                                fieldWithPath("id").description("Id of beer").ignored(),
+                                fieldWithPath("createdDate").description("Date Created").ignored(),
+                                fieldWithPath("lastUpdatedDate").description("Date of last update").ignored(),
+                                fieldWithPath("beerName").description("Beer name"),
+                                fieldWithPath("beerStyle").description("Beer Style"),
+                                fieldWithPath("upc").description("UPC of Beer")
+                        )));
 
         verify(beerService).getBeerById(any(UUID.class));
     }
@@ -83,11 +97,22 @@ public class BeerControllerV2Test {
                         .upc(upc)
                         .build());
 
+        ConstrainedFields fields = new ConstrainedFields(BeerDtoV2.class);
+
         mockMvc.perform(post(API_V2_BEER)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .content(asJsonString(beerDto)))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andDo(document("v2/beer-new",
+                        requestFields(
+                                fields.withPath("id").description("Id of beer").ignored(),
+                                fields.withPath("createdDate").description("Date Created").ignored(),
+                                fields.withPath("lastUpdatedDate").description("Date of last update").ignored(),
+                                fields.withPath("beerName").description("Beer name"),
+                                fields.withPath("beerStyle").description("Beer Style"),
+                                fields.withPath("upc").description("UPC of Beer")
+                        )));
 
         verify(beerService).saveNewBeer(any(BeerDtoV2.class));
     }
@@ -117,7 +142,6 @@ public class BeerControllerV2Test {
                 .accept(MediaType.APPLICATION_JSON)
                 .content(asJsonString(beerDto)))
                 .andExpect(status().isBadRequest());
-
     }
 
     @Test
@@ -158,11 +182,25 @@ public class BeerControllerV2Test {
                 .upc(12L)
                 .build());
 
-        mockMvc.perform(put(MessageFormat.format("{0}/{1}",API_V2_BEER, id))
+        ConstrainedFields fields = new ConstrainedFields(BeerDtoV2.class);
+
+        mockMvc.perform(put(API_V2_BEER + "/{beerId}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
                 .content(asJsonString(beerToSaveDto)))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andDo(document("v2/beer-update",
+                        pathParameters(
+                                parameterWithName("beerId").description("UUID of desired beer to update.")),
+                        requestFields(
+                                fields.withPath("id").description("Id of beer").ignored(),
+                                fields.withPath("createdDate").description("Date Created").ignored(),
+                                fields.withPath("lastUpdatedDate").description("Date of last update").ignored(),
+                                fields.withPath("beerName").description("Beer name"),
+                                fields.withPath("beerStyle").description("Beer Style"),
+                                fields.withPath("upc").description("UPC of Beer")
+                        )));
+
 
         verify(beerService).updateBeer(any(UUID.class), any(BeerDtoV2.class));
     }
@@ -170,11 +208,31 @@ public class BeerControllerV2Test {
     @Test
     public void deleteBeer() throws Exception {
         UUID id = UUID.randomUUID();
-        mockMvc.perform(delete(MessageFormat.format("{0}/{1}",API_V2_BEER, id))
+        mockMvc.perform(delete(API_V2_BEER + "/{beerId}", id)
                 .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isNoContent())
+                .andDo(document("v2/beer-delete",
+                        pathParameters(
+                                parameterWithName("beerId").description("UUID of desired beer to delete."))));
 
         then(beerService).should().deleteBeer(any(UUID.class));
     }
+
+    private static class ConstrainedFields {
+
+        private final ConstraintDescriptions constrainedDescriptions;
+
+        ConstrainedFields(Class<?> input) {
+            this.constrainedDescriptions = new ConstraintDescriptions(input);
+        }
+
+        private FieldDescriptor withPath(String path) {
+            return fieldWithPath(path).attributes(key("constraints")
+                    .value(StringUtils.collectionToDelimitedString(this.constrainedDescriptions
+                            .descriptionsForProperty(path), ". ")));
+        }
+
+    }
+
 }

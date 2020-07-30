@@ -2,14 +2,12 @@ package guru.springframework.msscbrewery.web.controller;
 
 import guru.springframework.msscbrewery.services.CustomerService;
 import guru.springframework.msscbrewery.web.model.CustomerDto;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.text.MessageFormat;
 import java.util.UUID;
@@ -25,23 +23,16 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@WebMvcTest(CustomerController.class)
 public class CustomerControllerTest {
 
     private static final String API_V1_CUSTOMER = "/api/v1/customer";
 
-    @Mock
+    @MockBean
     CustomerService customerService;
 
-    @InjectMocks
-    CustomerController customerController;
-
+    @Autowired
     MockMvc mockMvc;
-
-    @Before
-    public void setUp() throws Exception {
-        MockitoAnnotations.initMocks(this);
-        mockMvc = MockMvcBuilders.standaloneSetup(customerController).build();
-    }
 
     @Test
     public void getByIdOk() throws Exception {
@@ -65,7 +56,6 @@ public class CustomerControllerTest {
     public void handlePostOk() throws Exception {
         UUID id = UUID.randomUUID();
         final String name = "Pepe Biondi";
-        final long upc = 1L;
 
         final CustomerDto customerDto = CustomerDto.builder()
                 .name(name)

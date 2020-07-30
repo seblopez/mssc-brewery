@@ -2,7 +2,6 @@ package guru.springframework.msscbrewery.web.controller.v2;
 
 import guru.springframework.msscbrewery.services.v2.BeerServiceV2;
 import guru.springframework.msscbrewery.web.model.v2.BeerDtoV2;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -18,18 +17,19 @@ import java.util.UUID;
 
 @Slf4j
 @Validated
-@RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v2/beer")
 public class BeerControllerV2 {
     private static final String API_V2_BEER = "/api/v2/beer";
     private final BeerServiceV2 beerService;
+    private final String host;
+    private final String port;
 
-    @Value("${beer.app.host}")
-    private String host;
-
-    @Value("${beer.app.port}")
-    private String port;
+    public BeerControllerV2(BeerServiceV2 beerService, @Value("${beer.app.host}") String host,  @Value("${beer.app.port}") String port) {
+        this.beerService = beerService;
+        this.host = host;
+        this.port = port;
+    }
 
     @GetMapping({"/{beerId}"})
     public ResponseEntity<BeerDtoV2> getBeer(@NotNull @PathVariable("beerId") UUID beerId) {
